@@ -12,6 +12,8 @@ ignoredThreads:
   - "cleanup"
   - "crond"
   - "crypto"
+  - "dhclient"
+  - "docker-proxy"
   - "dbus-daemon"
   - "deferwq"
   - "ext4-rsv-conver"

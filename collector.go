@@ -170,6 +170,14 @@ func (c *Collector) String() string {
 	return str
 }
 
+func (c *Collector) GetValidProcess() Processes {
+	processes := make(Processes, 0)
+	for _, pid := range c.valid {
+		processes = append(processes, c.all[pid])
+	}
+	return processes
+}
+
 func (c *Collector) getShimThreadNames() []string {
 	names := make([]string, 0)
 	for _, pid := range c.shim {

@@ -15,4 +15,6 @@ func main() {
 		panic(err)
 	}
 	fmt.Println(collector.String())
+	processes := collector.GetValidProcess()
+	fmt.Println(host_service_discovery.PrettyObj(processes))
 }

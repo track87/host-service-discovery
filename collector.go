@@ -43,7 +43,7 @@ type Processes []*Process
 
 type Collector struct {
 	//origin  map[int32]*process.Process
-	all     Processes
+	all     map[int32]*Process
 	kernel  []int32
 	shim    []int32
 	ignored []int32
@@ -52,7 +52,7 @@ type Collector struct {
 
 func NewCollector() *Collector {
 	return &Collector{
-		all:     make(Processes, 0),
+		all:     make(map[int32]*Process, 0),
 		kernel:  make([]int32, 0),
 		shim:    make([]int32, 0),
 		ignored: make([]int32, 0),
@@ -70,7 +70,7 @@ func (c *Collector) Gen() error {
 		if err != nil {
 			continue
 		}
-		c.all = append(c.all, parseProcess(proc))
+		c.all[pid] = parseProcess(proc)
 	}
 	c.initShimThreads()
 	if err = c.initKernelThreads(); err != nil {
@@ -80,22 +80,13 @@ func (c *Collector) Gen() error {
 	return nil
 }
 
-func (c *Collector) getProcess(pid int32) *Process {
-	for _, p := range c.all {
-		if p.PID == pid {
-			return p
-		}
-	}
-	return nil
-}
-
 func (c *Collector) initKernelThreads() error {
 	if err := createCheckScript(scriptCheckKernelThread); err != nil {
 		return err
 	}
-	for _, proc := range c.all {
-		if checkKernelThread(proc.PID) {
-			c.kernel = append(c.kernel, proc.PID)
+	for pid := range c.all {
+		if checkKernelThread(pid) {
+			c.kernel = append(c.kernel, pid)
 		}
 	}
 	return nil
@@ -120,9 +111,9 @@ func (c *Collector) initValid() {
 	for _, p := range ignoredPids {
 		ignoredSet[p] = struct{}{}
 	}
-	for _, proc := range c.all {
-		if _, exists := ignoredSet[proc.PID]; !exists {
-			c.valid = append(c.valid, proc.PID)
+	for pid := range c.all {
+		if _, exists := ignoredSet[pid]; !exists {
+			c.valid = append(c.valid, pid)
 		}
 	}
 }
@@ -144,8 +135,8 @@ func (c *Collector) getIgnoredSystemPids() []int32 {
 func (c *Collector) getIgnoredShimPids() []int32 {
 	roots := make([]*Node, 0)
 	for _, pid := range c.shim {
-		if proc := c.getProcess(pid); proc != nil {
-			roots = append(roots, NewNode(proc.PID, proc.PPID))
+		if v, exists := c.all[pid]; exists {
+			roots = append(roots, NewNode(v.PID, v.PPID))
 		}
 	}
 	nodes := make([]*Node, 0)
@@ -163,14 +154,51 @@ func (c *Collector) getIgnoredShimPids() []int32 {
 }
 
 func (c *Collector) String() string {
+	kernelStr := strings.Join(c.getKernelThreadNames(), ", ")
+	shimStr := strings.Join(c.getShimThreadNames(), ", ")
+	ignoredStr := strings.Join(c.getIgnoredThreadNames(), ", ")
+	validStr := strings.Join(c.getValidThreadNames(), ", ")
+
 	str := fmt.Sprintf(`
 	Total: %d
-	Kernel: %v
-	Shim: %v
-	Ignored: %v
-	Valid: %v
-`, len(c.all), c.kernel, c.shim, c.ignored, c.valid)
+	Kernel: %s
+	Shim: %s
+	Ignored: %s
+	Valid: %s
+`, len(c.all), kernelStr, shimStr, ignoredStr, validStr)
 	return str
+}
+
+func (c *Collector) getShimThreadNames() []string {
+	names := make([]string, 0)
+	for _, pid := range c.shim {
+		names = append(names, c.all[pid].Name)
+	}
+	return names
+}
+
+func (c *Collector) getKernelThreadNames() []string {
+	names := make([]string, 0)
+	for _, pid := range c.kernel {
+		names = append(names, c.all[pid].Name)
+	}
+	return names
+}
+
+func (c *Collector) getIgnoredThreadNames() []string {
+	names := make([]string, 0)
+	for _, pid := range c.ignored {
+		names = append(names, c.all[pid].Name)
+	}
+	return names
+}
+
+func (c *Collector) getValidThreadNames() []string {
+	names := make([]string, 0)
+	for _, pid := range c.valid {
+		names = append(names, c.all[pid].Name)
+	}
+	return names
 }
 
 func checkKernelThread(pid int32) bool {

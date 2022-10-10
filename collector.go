@@ -106,6 +106,7 @@ func (c *Collector) initValid() {
 	// filter threads not shim
 	ignoredPids = append(ignoredPids, c.getIgnoredShimPids()...)
 	ignoredPids = append(ignoredPids, c.getIgnoredSystemPids()...)
+	c.ignored = ignoredPids
 
 	ignoredSet := make(map[int32]struct{})
 	for _, p := range ignoredPids {

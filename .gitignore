@@ -1,0 +1,11 @@
+.idea
+main
+main.exe
+cover.out
+
+.DS_Store
+
+*.log
+bin
+bin/*
+.run/

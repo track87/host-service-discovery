@@ -1,3 +1,4 @@
+# 配置需要忽略的进程名称,支持正则表达式
 ignoredThreads:
   - sap[0-9]*
   - containerd-shim-runc-.*
@@ -88,4 +89,7 @@ ignoredThreads:
   - tuned
   - watchdog
   - writeback
+# 用户无需关心，内部执行脚本的目录. 为了防止冲突，提升为可配置项
 kernelThreadCheckScript: /tmp/check_kernel_script_x0xweu.sh
+# 支持正则表达式
+shimThread: containerd-shim.*

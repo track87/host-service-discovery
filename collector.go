@@ -14,7 +14,6 @@ import (
 	"github.com/shirou/gopsutil/process"
 )
 
-var dockerShimThread = "containerd-shim-runc-v2"
 var scriptCheckKernelThread = `
 #!/bin/bash
 
@@ -102,8 +101,15 @@ func (c *Collector) initKernelThreads() error {
 }
 
 func (c *Collector) initShimThreads() {
+	if GlobalConf.ShimThread == "" {
+		return
+	}
+	reg, err := regexp.Compile(GlobalConf.ShimThread)
+	if err != nil {
+		return
+	}
 	for _, proc := range c.all {
-		if proc.Name == dockerShimThread {
+		if reg.MatchString(proc.Name) {
 			c.shim = append(c.shim, proc.PID)
 		}
 	}

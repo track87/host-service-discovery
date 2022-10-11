@@ -19,6 +19,7 @@ var GlobalConf = &Config{}
 type Config struct {
 	IgnoredThreads          []string `json:"IgnoredThreads" yaml:"ignoredThreads"`
 	KernelThreadCheckScript string   `json:"KernelThreadCheckScript" yaml:"kernelThreadCheckScript"`
+	ShimThread              string   `json:"ShimThread" yaml:"shimThread"`
 }
 
 func MustInitConf(confFile string) {

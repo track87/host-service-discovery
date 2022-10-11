@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"regexp"
 	"strconv"
 	"strings"
 	"syscall"
@@ -48,16 +49,24 @@ type Collector struct {
 	shim    []int32
 	ignored []int32
 	valid   []int32
+
+	ignoreRegex []*regexp.Regexp
 }
 
 func NewCollector() *Collector {
-	return &Collector{
-		all:     make(map[int32]*Process, 0),
-		kernel:  make([]int32, 0),
-		shim:    make([]int32, 0),
-		ignored: make([]int32, 0),
-		valid:   make([]int32, 0),
+	c := &Collector{
+		all:         make(map[int32]*Process, 0),
+		kernel:      make([]int32, 0),
+		shim:        make([]int32, 0),
+		ignored:     make([]int32, 0),
+		valid:       make([]int32, 0),
+		ignoreRegex: make([]*regexp.Regexp, 0),
 	}
+
+	for _, expression := range GlobalConf.IgnoredThreads {
+		c.ignoreRegex = append(c.ignoreRegex, regexp.MustCompile(expression))
+	}
+	return c
 }
 
 func (c *Collector) Gen() error {
@@ -120,14 +129,13 @@ func (c *Collector) initValid() {
 }
 
 func (c *Collector) getIgnoredSystemPids() []int32 {
-	ignoredSet := make(map[string]struct{})
-	for _, name := range GlobalConf.IgnoredThreads {
-		ignoredSet[name] = struct{}{}
-	}
 	ignored := make([]int32, 0)
 	for _, proc := range c.all {
-		if _, exists := ignoredSet[proc.Name]; exists {
-			ignored = append(ignored, proc.PID)
+		for _, reg := range c.ignoreRegex {
+			if reg.MatchString(proc.Name) {
+				ignored = append(ignored, proc.PID)
+				break
+			}
 		}
 	}
 	return ignored

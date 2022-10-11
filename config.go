@@ -8,7 +8,12 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-var GlobalConf = new(Config)
+const (
+	ModeMatch = "match"
+	ModeRegex = "regex"
+)
+
+var GlobalConf = &Config{}
 
 // Config configuration for service discovery
 type Config struct {
